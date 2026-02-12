@@ -1,0 +1,1765 @@
+{
+  "name": "Telegram->ClickUp Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1968,
+        880
+      ],
+      "id": "12a7ecc6-c250-423d-a2bd-472ab9f04cbe",
+      "name": "Telegram Trigger",
+      "webhookId": "25fff3ee-96aa-41ac-8127-b6cdc3d3d9aa",
+      "credentials": {
+        "telegramApi": {
+          "id": "your telegram api key",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "efbb2bf2-77c6-47df-aa09-fc34678a7384"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "01cf950e-4e9f-4a96-9171-7d6aa824a559",
+                    "leftValue": "={{ $json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3f74bc57-d00a-461a-b9ae-032d31e9be79",
+                    "leftValue": "={{ $json.message.document.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "file"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1744,
+        864
+      ],
+      "id": "23c585b2-276e-4473-b3e7-21904dd9fda4",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1520,
+        880
+      ],
+      "id": "13058650-98b8-458b-a1fb-64d122a8b7e2",
+      "name": "Get a file",
+      "webhookId": "b01842d3-4cc2-4e13-bb5d-1a5fc94abcea",
+      "credentials": {
+        "telegramApi": {
+          "id": "your telegram api key",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "binaryPropertyName": "=data",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -1296,
+        880
+      ],
+      "id": "7727b066-3105-4762-81a4-685ab7908510",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": "your openai api key",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "55f307c8-3e0a-4d1a-8362-711f40968675",
+              "name": "text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1296,
+        688
+      ],
+      "id": "42b63dc3-a3d1-41f9-9dae-e81f5a6ed1a5",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a smart ClickUp assistant integrated into n8n.\n\nYour task is to understand the user's request and determine the correct ClickUp API action.\n\n---\n\n### 🔧 Actions you can perform:\n- **comment** — add a comment to an existing task  \n- **create** — create a new task  \n- **update** — update an existing task  \n- **delete_task** — delete a task  \n- **update_comment** — update an existing comment  \n- **delete_comment** — delete a comment  \n- **create_checklist**, **update_checklist**, **delete_checklist**  \n- **create_checklist_item**, **update_checklist_item**, **delete_checklist_item**  \n- **attach_file** — attach a file to a task  \n- **none** — when no valid action is recognized  \n\n---\n\n### ⚙️ ClickUp Data Hierarchy\n1. **Spaces** → always start from here  \n2. **Folders** → belong to spaces  \n3. **Lists** → belong to folders or directly to spaces  \n4. **Tasks** → belong to lists  \n5. **Checklists / Comments / Files** → belong to tasks  \n\n---\n\nAUTOMATIC SEARCH RULES — read carefully:\n\n1) You have access to ClickUp data via tool nodes: getSpaces, getFolders, getLists, getTasks.\n   The results of these tools are provided to you as context. Use them to automatically resolve space_id, folder_id, list_id, and task_id.\n\n2) When user refers to an existing task by name (e.g. \"create API\", \"Test\"):\n   a) First try to match a list/folder from the available lists (case-insensitive, partial match on words).\n   b) If a list is found, call the getTasks tool for that list (tool will be invoked by n8n). Search returned task names by partial match (case-insensitive).\n   c) If a task matches, return its exact ClickUp task_id in the JSON (`\"task_id\": \"...\"`) and set action accordingly (e.g. \"update\", \"comment\", \"attach_file\" etc).\n   d) If no task is found in matched list(s), try other likely lists (same space) before giving up.\n   e) If no list matches the user's text, return `\"folder_id\": \"\"`, `\"list_id\": \"\"`, and confirmation_message asking to specify list/folder.\n\n3) Matching rules:\n   - Partial match on tokens (split by spaces, punctuation), prefer exact phrase if present.\n   - If multiple candidate tasks match, choose the most recently updated (or ask user if ambiguous).\n   - If ambiguous and cannot decide, set action = \"none\" and put an explicit message asking to clarify.\n\n4) Output requirements:\n   - Always return **top-level** JSON (do NOT wrap in \"output\" or \"result\").\n   - When you found list_id/folder_id/task_id — include them. Example success:\n     {\"action\":\"update\",\"task_id\":\"123\",\"list_id\":\"222\",\"folder_id\":\"111\", ...}\n   - If you could find list/folder but not task, include folder_id/list_id and:\n     {\"action\":\"none\",\"task_id\":\"\", \"list_id\":\"...\", \"folder_id\":\"...\", \"confirmation_message\":\"⚠️ Could not find task '...' in list '...' — please provide task id or confirm.\"}\n\n5) Search order summary:\n   - Use explicit list/folder names if user mentioned them.\n   - Else match keywords → find list → call getTasks → match task by name → return task_id.\n\n---\n\n### 🧠 Task and Entity Rules\n- **Tasks** require `list_id`. If not found, use “General Tasks” list if available.\n- **Comments / Checklists / Files** always need a `task_id`.\n- **Assignee** → find the ClickUp Member ID and full name from the Google Sheet **\"Members of Ahead Media\"**.\n- **Priorities** → return numbers:\n  - Urgent = 1  \n  - High = 2  \n  - Normal = 3  \n  - Low = 4  \n- **Due date** must be in ISO 8601 format (e.g. 2025-09-30).\n\n---\n\n### ⚠️ Fallbacks\nIf any of these cannot be determined:\n- Leave the ID fields (`space_id`, `folder_id`, `list_id`) empty.\n- Add a message like:  \n  `\"⚠️ Could not determine list/folder — please specify where to create the task.\"`\n\n---\n\n### 🪶 Output Format\nReturn **only** one JSON object with this structure:\n\n```json\n{\n  \"action\": \"comment\" | \"create\" | \"update\" | \"delete_task\" | \"update_comment\" | \"delete_comment\" |\n             \"create_checklist\" | \"update_checklist\" | \"delete_checklist\" |\n             \"create_checklist_item\" | \"update_checklist_item\" | \"delete_checklist_item\" |\n             \"attach_file\" | \"none\",\n\n  \"task_id\": \"\",\n  \"task_name\": \"\",\n  \"description\": \"\",\n  \"due_date\": \"\",\n  \"comment_id\": \"\",\n  \"checklist_id\": \"\",\n  \"checklist_name\": \"\",\n  \"checklist_item_id\": \"\",\n  \"checklist_item_name\": \"\",\n  \"checklist_items\": [],\n  \"file_id\": \"\",\n  \"file_name\": \"\",\n  \"file_path\":\"\",\n  \"binary\":\"\",\n  \"space_id\": \"\",\n  \"folder_id\": \"\",\n  \"list_id\": \"\",\n  \"comment\": \"\",\n  \"update_fields\": {\n      \"status\": \"\",\n      \"description\": \"\",\n      \"due_date\": \"\",\n      \"priority\": \"\",\n      \"assignee\": \"\"\n  },\n  \"priority\": \"\",\n  \"assignee\": \"\",\n  \"confirmation_message\": \"\"\n}\n```\n\n---\n\n### 💬 Confirmation Message Examples\n- ✅ Created new task \"Fix API auth\" in list \"Backend API\"\n- 💬 Added comment to \"Landing Page Design\"\n- 🗑️ Deleted task \"Old draft\"\n- 📋 Created checklist \"Deployment Steps\"\n- ☑️ Added checklist item \"Run tests\"\n- 📎 Attached file \"screenshot.png\"\n- ⚠️ Could not determine target list — please specify manually\n\n---\n\n### ✅ Rules Summary\n- Always return valid JSON (no wrapping inside “output” or “response”).\n- Always include a human-readable `confirmation_message`.\n- Automatically find the right space/folder/list whenever possible.\n- If an ID is missing, don’t stop execution — continue with available info.\n- If no valid action → return `\"action\": \"none\"` and a warning message.\n\n---\n\n### 📎 File Handling Rules \nIf the user sends a file (fields such as file_id, file_name, file_path, or binary data):\n\n1. Recognize this as a request to attach a file to a ClickUp task.\n2. Set `\"action\": \"attach_file\"`.\n3. Return the following JSON structure **without sending the file yourself**:\n\n```json\n{\n  \"action\": \"attach_file\",\n  \"task_id\": \"123456\",               // ID of the target task\n  \"file_name\": \"example.png\",\n  \"file_path\": \"documents/example.png\",\n  \"binary\": \"={{ $binary.data }}\",   // link to binary data from Extract From File node\n  \"confirmation_message\": \"📎 File 'example.png' will be attached to task ID 123456.\"\n}\n---\n\nIMPORTANT: Return ONLY a single valid JSON object. DO NOT wrap it inside \"output\", \"result\", \"response\" or any other key. The first character must be \"{\" and the last must be \"}\".\n\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -304,
+        768
+      ],
+      "id": "2f59fa4e-fb29-4672-a4f9-7d0f11c320b9",
+      "name": "AI Agent",
+      "alwaysOutputData": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -864,
+        1104
+      ],
+      "id": "e53a0629-5bf3-40f9-aad7-889b53f8cbd7",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "your openai api key",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "=create",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c396fa45-7993-49ac-84bb-363bb0bef29c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "create task"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3408c732-aca0-4c0e-8abe-a69baec5e812",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "=comment",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "comment create"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "609ffe6e-98b5-4b25-a86d-f7b96bf98832",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "update",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "update task"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cfc25d79-fef7-454f-a679-abd31404c616",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "none",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "none"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f7d06bce-83c1-402f-a136-c283a14b34ed",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "delete_task",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "delete task"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "efd4f5fa-231a-42ff-9ed8-2fe681426246",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "delete_comment",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "delete comment"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f3b99602-d3d1-4f98-ad20-dbb4433d92bb",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "update_comment",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "update comment"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "4561d71f-aa02-412a-958e-d5d28585c4b7",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "create_checklist",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Create checklist"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "72c53489-0204-421b-8094-1e6c2fd28ee7",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "delete_checklist",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Delete checklist"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "db5d034d-30c7-42ad-8d39-da82d80598d6",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "update_checklist",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Update checklist"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "4b6fdb4d-2324-40e3-89b3-39ca2da119f5",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "create_checklist_item",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "create_checklist_item"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "562a2329-f8bc-4063-a171-e63837b7eff3",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "delete_checklist_item",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "delete_checklist_item"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "33f8b73c-f987-4a71-b1d1-e2de6401fc8d",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "update_checklist_item",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "update_checklist_item"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        848,
+        704
+      ],
+      "id": "a3f55863-d4e1-46be-90ed-c17b93222da1",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "comment",
+        "commentOn": "task",
+        "id": "={{ $('AI Agent').item.json.output.task_id }}\n",
+        "commentText": "={{ $('AI Agent').item.json.output.comment }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        304
+      ],
+      "id": "23527300-1ce1-4486-9caa-96cbf6f7ace8",
+      "name": "Create a comment",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "team": "9012009859",
+        "space": "={{ $json.space_id }}",
+        "folderless": true,
+        "list": "={{ $json.list_id }}",
+        "name": "={{ $('AI Agent').item.json.output.task_name }}",
+        "additionalFields": {
+          "assignees": "={{ $('Code in JavaScript1').item.json.assignee }}",
+          "content": "={{ $('AI Agent').item.json.output.description }}",
+          "dueDate": "={{ $('AI Agent').item.json.output.due_date }}",
+          "priority": "={{ $('AI Agent').item.json.output.priority }}"
+        }
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        -272
+      ],
+      "id": "86b596a0-c307-41b3-9508-b46d1a1019c7",
+      "name": "Create a task",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $('AI Agent').item.json.output.confirmation_message }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1296,
+        784
+      ],
+      "id": "bc2ed316-0fd5-4979-ae6b-7f047f61ed9c",
+      "name": "Send a text message1",
+      "webhookId": "8393fa24-6be0-4669-a622-d6a35c309edc",
+      "credentials": {
+        "telegramApi": {
+          "id": "your telegram api key",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "a tool to search members",
+        "documentId": {
+          "__rl": true,
+          "value": "1bj4IGnRatlbw4ly-NOU3MaQdtUayEo909qR86YJYTqg",
+          "mode": "list",
+          "cachedResultName": "name of the sheet",
+          "cachedResultUrl": "name of the sheet url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "members",
+          "cachedResultUrl": "name of the sheet url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -608,
+        1104
+      ],
+      "id": "3d2ce6a8-f8b8-493e-bc2d-b5bbc2cac603",
+      "name": "Google Sheets name of the sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "your google sheets api key",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $('AI Agent').item.json.output.confirmation_message }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1072,
+        1072
+      ],
+      "id": "bbdca08d-ad92-4814-a15d-ded6d8a76bb5",
+      "name": "Send a text message2",
+      "webhookId": "e23a0d9b-075e-45b0-a51e-09e65098833e",
+      "credentials": {
+        "telegramApi": {
+          "id": "your telegram api key",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "update",
+        "id": "={{ $('AI Agent').item.json.output.task_id }}",
+        "updateFields": {
+          "addAssignees": "={{ $('AI Agent').item.json.output.assignee }}",
+          "content": "={{ $('AI Agent').item.json.output.description }}",
+          "dueDate": "={{ $json.due_date }}",
+          "name": "={{ $('AI Agent').item.json.output.task_name }}",
+          "priority": "={{ $('AI Agent').item.json.output.priority }}",
+          "status": ""
+        }
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        -80
+      ],
+      "id": "66196333-d442-461e-96b5-6a981d2059c1",
+      "name": "Update a task",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 15
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -736,
+        1104
+      ],
+      "id": "610408fa-549d-4e44-85d8-aa22fd8ad4e7",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "delete",
+        "id": "={{ $('AI Agent').item.json.output.task_id }}"
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        112
+      ],
+      "id": "0aa4d8c0-54e7-49a4-a423-7e61b51a4bd9",
+      "name": "Delete a task",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "comment",
+        "operation": "delete",
+        "comment": "={{ $('AI Agent').item.json.output.comment_id }}"
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        496
+      ],
+      "id": "2b40eb58-4b22-4a9a-84dd-d93e1e116628",
+      "name": "Delete a comment",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "comment",
+        "operation": "update",
+        "comment": "={{ $json.output.comment_id }}",
+        "updateFields": {
+          "assignee": "={{ $('AI Agent').item.json.output.assignee }}",
+          "commentText": "={{ $('AI Agent').item.json.output.comment }}"
+        }
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        688
+      ],
+      "id": "cd4b537c-fe06-4944-b870-70443f5b012b",
+      "name": "Update a comment",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "comment",
+        "operation": "getAll",
+        "commentsOn": "task",
+        "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ID', `get a comment id `, 'string') }}"
+      },
+      "type": "n8n-nodes-base.clickUpTool",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        1104
+      ],
+      "id": "ffdeb515-b389-4e7b-b679-d23e9f93f5e1",
+      "name": "Get many comments in ClickUp",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"action\": \"create\",\n  \"task_id\": \"123456789\",\n  \"task_name\": \"Redesign Landing Page\",\n  \"description\": \"Update the homepage layout and colors\",\n  \"due_date\": \"2025-10-20\",\n  \"comment_id\": \"987654321\",\n  \"checklist_id\": \"55555\",\n  \"checklist_item_id\": \"88888\",\n  \"checklist_item_name\": \"Re-run API tests\",\n  \"checklist_name\": \"Deployment Steps\",\n  \"checklist_items\": [\"Setup server\", \"Upload build\", \"Run tests\"],\n  \"comment\": \"Please check the updated Figma link.\",\n  \"space_id\":\"3213123\",\n  \"folder_id\": \"1111\",\n   \"list_id\": \"2222\", \n  \"update_fields\": {},\n  \"priority\": \"2\",\n  \"assignee\": \"2323123\",\n  \"confirmation_message\": \"✅ Created new task 'Redesign Landing Page' assigned to Nikita Litoshiks, due 2025-10-20.\"\n}\n\n            \n  "
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        416,
+        1104
+      ],
+      "id": "4757cf67-078a-4177-ae0f-87fbee20eb85",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "checklist",
+        "task": "={{ $('AI Agent').item.json.output.task_id }}",
+        "name": "={{ $('AI Agent').item.json.output.checklist_name }}"
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        880
+      ],
+      "id": "6cdc9136-e6f5-44c7-81cd-2f548b88e830",
+      "name": "Create a checklist",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "checklist",
+        "operation": "delete",
+        "checklist": "={{ $('AI Agent').item.json.output.checklist_id }}"
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        1456
+      ],
+      "id": "5601ebb3-2c0f-484f-900a-3d154921044b",
+      "name": "Delete a checklist",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "checklist",
+        "operation": "update",
+        "checklist": "={{ $('AI Agent').item.json.output.checklist_id }}",
+        "updateFields": {
+          "name": "={{ $('AI Agent').item.json.output.checklist_name }}",
+          "position": 0
+        }
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        1840
+      ],
+      "id": "3bcd1ade-7655-4d89-b63c-a5370dff9f56",
+      "name": "Update a checklist",
+      "credentials": {
+        "clickUpOAuth2Api": {
+            "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "checklistItem",
+        "checklist": "={{ $('AI Agent').item.json.output.checklist_id }}",
+        "name": "={{ $('AI Agent').item.json.output.checklist_item_name }}",
+        "additionalFields": {
+          "assignee": "={{ $('AI Agent').item.json.output.assignee }}"
+        }
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        1264
+      ],
+      "id": "3167e762-ab36-433f-b06a-c785f420b701",
+      "name": "Create a checklist item",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "checklistItem",
+        "operation": "delete",
+        "checklist": "={{ $('AI Agent').item.json.output.checklist_id }}",
+        "checklistItem": "={{ $('AI Agent').item.json.output.checklist_item_id }}"
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        1648
+      ],
+      "id": "5d6f7bbe-fb92-4c60-8995-53160d854306",
+      "name": "Delete a checklist item",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "checklistItem",
+        "operation": "update",
+        "checklist": "={{ $('AI Agent').item.json.output.checklist_id }}",
+        "checklistItem": "={{ $('AI Agent').item.json.output.checklist_item_id }}",
+        "updateFields": {
+          "assignee": "={{ $('AI Agent').item.json.output.assignee }}",
+          "name": "={{ $('AI Agent').item.json.output.checklist_item_name }}",
+          "parent": "",
+          "resolved": false
+        }
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        2032
+      ],
+      "id": "b4a22372-1c5c-46bd-b649-4b19a39c5f8c",
+      "name": "Update a checklist item",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "get a space id in ClickUp",
+        "url": "https://api.clickup.com/api/v2/team/9012009859/space",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -352,
+        1104
+      ],
+      "id": "1f7fe92c-4081-4ee7-9ac9-febd6e4079af",
+      "name": "getSpaces",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v2/space/{{$fromAI('space_id')}}/folder",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -240,
+        1104
+      ],
+      "id": "2956faa4-640d-45cb-b512-0e8dd06be632",
+      "name": "getFolders",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Makes an HTTP request and returns the response data ",
+        "url": "=https://api.clickup.com/api/v2/space/{{$fromAI('space_id')}}/list",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -96,
+        1104
+      ],
+      "id": "13bb9b21-af72-40d1-aa71-e8dacd4e10f3",
+      "name": "getFolderlessList",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "get a lists in click up",
+        "url": "=https://api.clickup.com/api/v2/folder/{{$fromAI('folder_id')}}/list",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        32,
+        1104
+      ],
+      "id": "e42f70e6-f214-4105-a55e-c4b6ee58b29a",
+      "name": "getLists",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clickup.com/api/v2/list/{{$fromAI('list_id')}}/task",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        1104
+      ],
+      "id": "5bed38a8-b6aa-4077-a684-0bc02edab268",
+      "name": "getTasks",
+      "credentials": {
+        "clickUpOAuth2Api": {
+            "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        288,
+        1104
+      ],
+      "id": "4722e2b6-d6af-4bbc-9552-3a2915818307",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function / Code node\n// Возвращаем либо items[0].json.output, либо сам items[0].json\nconst payload = items[0].json;\nreturn [{ json: payload.output ? payload.output : payload }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        880
+      ],
+      "id": "dab23630-cc9c-4c0a-86b2-7b0e57ded694",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "destinationKey": "file_metadata",
+        "options": {
+          "encoding": "base64",
+          "keepSource": "both"
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -1088,
+        1072
+      ],
+      "id": "dd668b27-c2ac-472c-88fa-d271036c7514",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.document.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1296,
+        1072
+      ],
+      "id": "b496c9c6-4e7f-47ae-bc9d-9c900d117622",
+      "name": "Get a file2",
+      "webhookId": "1b9bf876-9c04-427d-b54a-fcecdc793914",
+      "credentials": {
+        "telegramApi": {
+          "id": "your telegram api key",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.clickup.com/api/v2/task/{{$fromAI('task_id')}}/attachment",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "clickUpOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{ $binary.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        1104
+      ],
+      "id": "979bc7ad-dab6-47f1-939a-2528871a56a2",
+      "name": "Attachment",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "your clickup api key",
+          "name": "ClickUp account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Create a task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a comment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update a task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete a task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete a comment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update a comment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a checklist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete a checklist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update a checklist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a checklist item",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete a checklist item",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update a checklist item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a comment": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a task": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Members of Ahead Media": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a task": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a task": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a comment": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a comment": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many comments in ClickUp": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a checklist": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a checklist": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a checklist": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a checklist item": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a checklist item": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a checklist item": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getSpaces": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getFolders": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getFolderlessList": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getLists": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getTasks": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file2": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attachment": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f781de91-862f-41e9-b376-6c02804cd4e0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2a7601935e83c63e5d3b3f3371c969cc8415a74137be2bb463bcf0956b07193d"
+  },
+  "id": "Y3DbqLBIbWss785H",
+  "tags": [
+    {
+      "createdAt": "2025-10-02T10:51:42.486Z",
+      "updatedAt": "2025-10-02T10:51:42.486Z",
+      "id": "your project id",
+      "name": "name of the project"
+    }
+  ]
+}
